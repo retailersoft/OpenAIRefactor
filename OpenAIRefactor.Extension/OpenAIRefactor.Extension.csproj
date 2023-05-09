@@ -52,7 +52,6 @@
     <Compile Include="Services\IChatGptSettingsService.cs" />
     <Compile Include="Services\IApiHttpService.cs" />
     <Compile Include="Services\IChatCompletionService.cs" />
-    <Compile Include="Enums\AIServiceProviderTypeEnum.cs" />
     <Compile Include="Commands\RefactorCommand.cs" />
     <Compile Include="Models\ChatCompletions\ChatChoice.cs" />
     <Compile Include="Models\ChatCompletions\ChatChoiceStreamed.cs" />
@@ -70,7 +69,6 @@
     <Compile Include="Models\EditorLanguageInfo.cs" />
     <Compile Include="Models\KnownModelTypes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Settings\AuthenticationInfo.cs" />
     <Compile Include="Settings\OpenAIDefaultOptions.cs" />
     <Compile Include="Settings\OpenAIOptions.cs" />
     <Compile Include="VSCommandTable.cs">
@@ -153,7 +151,6 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="ChatService\" />
     <Folder Include="Models\HTTP\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
