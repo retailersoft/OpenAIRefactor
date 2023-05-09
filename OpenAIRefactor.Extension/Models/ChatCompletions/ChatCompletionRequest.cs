@@ -4,7 +4,6 @@ using OpenAIRefactor.Settings;
 using SharpToken;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace OpenAIRefactor.Models.ChatCompletions
@@ -60,7 +59,6 @@ namespace OpenAIRefactor.Models.ChatCompletions
         /// ID of the model to use.<br/>
         /// <see href="https://platform.openai.com/docs/api-reference/chat/create#chat/create-model" />
         /// </summary>
-        [Required]
         [JsonProperty("model")]
         public string Model { get; set; } = OpenAIDefaultOptions.DefaultChatCompletionModel;
 

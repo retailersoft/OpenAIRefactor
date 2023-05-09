@@ -36,14 +36,13 @@ namespace OpenAIRefactor.Services
             where TData : class
             where TResult : class
         {
-            return await ApiCallAsync<TData, TResult>(apiKey, HttpMethod.Post, uri, data, contentFactory, cancellationToken).ConfigureAwait(false);
+            return await ApiCallAsync<TData, TResult>(apiKey, HttpMethod.Post, uri, data, cancellationToken).ConfigureAwait(false);
         }
 
 
         private async Task<HttpOperationResult<TResult>> ApiCallAsync<TData, TResult>(string apiKey, HttpMethod httpMethod,
                 string uri,
                 TData data,
-                Func<TData, CancellationToken, Task<HttpContent>> contentFactory,
                 CancellationToken cancellationToken = default)
                 where TData : class
                 where TResult : class

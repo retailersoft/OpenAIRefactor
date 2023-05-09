@@ -5,7 +5,6 @@ using Microsoft;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -25,11 +24,11 @@ namespace OpenAIRefactor.Commands
     [Command(PackageIds.RefactorCommand)]
     internal class RefactorCommand : BaseCommand<RefactorCommand>
     {
-        private DTE dte;
-        private EnvDTE80.DTE2 dte2;
+        private readonly DTE dte;
+        private readonly EnvDTE80.DTE2 dte2;
 
-        private Dictionary<string, EditorLanguageInfo> EditorLanguageInfos = new Dictionary<string, EditorLanguageInfo>();
-        private IVsUIShell uiShell;
+        private readonly Dictionary<string, EditorLanguageInfo> EditorLanguageInfos = new Dictionary<string, EditorLanguageInfo>();
+        private readonly IVsUIShell uiShell;
 
         public RefactorCommand()
         {
@@ -41,16 +40,16 @@ namespace OpenAIRefactor.Commands
             dte2 = (EnvDTE80.DTE2)ServiceProvider.GlobalProvider.GetService(typeof(DTE));
         }
 
-        private SyntaxNode FindNode<T>(SnapshotPoint caretPosition, SyntaxNode root) where T : SyntaxNode
-        {
-            var span = new TextSpan(caretPosition.GetContainingLine().Start, caretPosition.GetContainingLine().End);
-            var node = root.FindNode(span, getInnermostNodeForTie: true);
-            while (node != null && !(node is T))
-            {
-                node = node.Parent;
-            }
-            return node;
-        }
+        //private SyntaxNode FindNode<T>(SnapshotPoint caretPosition, SyntaxNode root) where T : SyntaxNode
+        //{
+        //    var span = new TextSpan(caretPosition.GetContainingLine().Start, caretPosition.GetContainingLine().End);
+        //    var node = root.FindNode(span, getInnermostNodeForTie: true);
+        //    while (node != null && !(node is T))
+        //    {
+        //        node = node.Parent;
+        //    }
+        //    return node;
+        //}
 
         private void FormatDocument()
         {
@@ -86,9 +85,11 @@ namespace OpenAIRefactor.Commands
 
                     if (language == CodeModelLanguageConstants.vsCMLanguageCSharp)
                     {
-                        EditorLanguageInfo info = new EditorLanguageInfo();
-                        info.VisualStudioVersion = dte.Version;
-                        info.Language = "C#";
+                        EditorLanguageInfo info = new EditorLanguageInfo
+                        {
+                            VisualStudioVersion = dte.Version,
+                            Language = "C#"
+                        };
 
                         string targetFrameworkMoniker = project.Properties.Item("TargetFrameworkMoniker").Value.ToString();
                         FrameworkName frameworkName = new FrameworkName(targetFrameworkMoniker);
@@ -143,6 +144,7 @@ namespace OpenAIRefactor.Commands
 
                 var methodSpan = new SnapshotSpan(textView.TextSnapshot, span);
                 documentView.TextBuffer.Replace(methodSpan, text);
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 FormatDocument();
 
                 await VS.StatusBar.ShowProgressAsync($"Refactored {methodName} successfully.", 3, 3);
@@ -153,13 +155,24 @@ namespace OpenAIRefactor.Commands
                 var errorHead = $"Error Refactoring {methodName}.";
                 await VS.StatusBar.ShowProgressAsync(errorHead, 3, 3);
 
-                await VS.MessageBox.ShowErrorAsync(errorHead, textCompletionResponse.ErrorMessage);
+
+
+                if (textCompletionResponse.Exception.Message.Contains("Unauthorized"))
+                {
+                    await VS.MessageBox.ShowErrorAsync("Unauthorized API Key", "The API Key Entered is invalid!\n\nConfigure your API Key in Tools/Options/OpenAI Refactor\nand Try Again!");
+                    chatGptSettingsService?.ChatGptApiKeyValidated(false);
+                }
+                else
+                {
+                    await VS.MessageBox.ShowErrorAsync(errorHead, textCompletionResponse.ErrorMessage);
+                }
+
             }
 
         }
 
 
-        private async Task ProcessMethodNodeAsync(EditorLanguageInfo editorLanguageInfo, DocumentView documentView, IWpfTextView textView, SyntaxTree syntaxTree, MethodDeclarationSyntax methodNode)
+        private async Task ProcessMethodNodeAsync(EditorLanguageInfo editorLanguageInfo, DocumentView documentView, IWpfTextView textView, MethodDeclarationSyntax methodNode)
         {
             var lines = GetNumberOfLines(methodNode);
             var originalMethod = methodNode.ToFullString();
@@ -188,7 +201,7 @@ namespace OpenAIRefactor.Commands
 
 
 
-        private async Task ProcessPropertyNodeAsync(EditorLanguageInfo editorLanguageInfo, DocumentView documentView, IWpfTextView textView, SyntaxTree syntaxTree, PropertyDeclarationSyntax node, bool isInGetAccessor)
+        private async Task ProcessPropertyNodeAsync(EditorLanguageInfo editorLanguageInfo, DocumentView documentView, IWpfTextView textView, PropertyDeclarationSyntax node, bool isInGetAccessor)
         {
             var lines = GetNumberOfLines(node);
             bool refactorEntireProperty = lines <= 20;
@@ -228,38 +241,16 @@ namespace OpenAIRefactor.Commands
                 var root = await syntaxTree.GetRootAsync();
                 if (TryGetSyntaxNode(caretPosition, root, out MethodDeclarationSyntax methodDeclarationSyntax))
                 {
-                    await ProcessMethodNodeAsync(editorLanguageInfo, documentView, textView, syntaxTree, methodDeclarationSyntax);
+                    await ProcessMethodNodeAsync(editorLanguageInfo, documentView, textView, methodDeclarationSyntax);
                 }
                 else if (TryGetPropertyDeclarationSyntax(caretPosition, root, out PropertyDeclarationSyntax propertyDeclarationSyntax, out bool isInGetAccessor))
                 {
-                    await ProcessPropertyNodeAsync(editorLanguageInfo, documentView, textView, syntaxTree, propertyDeclarationSyntax, isInGetAccessor);
+                    await ProcessPropertyNodeAsync(editorLanguageInfo, documentView, textView, propertyDeclarationSyntax, isInGetAccessor);
                 }
 
 
             }
         }
-
-        private int ShowMessage(string title, string message, OLEMSGBUTTON messageButton, OLEMSGDEFBUTTON defaultButton, OLEMSGICON icon)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            Guid clsid = Guid.Empty;
-
-            uiShell.ShowMessageBox(
-                       0,
-                       ref clsid,
-                       title,
-                       message,
-                       string.Empty,
-                       0,
-                       messageButton,
-                       defaultButton,
-                       icon,
-                       0,
-                       out int result);
-            return result;
-        }
-
-
 
         private bool TryGetPropertyDeclarationSyntax(SnapshotPoint caretPosition, SyntaxNode root, out PropertyDeclarationSyntax propertyDeclarationSyntax, out bool isInGetAccessor)
         {
@@ -301,25 +292,26 @@ namespace OpenAIRefactor.Commands
             return syntaxNode != null;
         }
 
-        private bool IsBusy
-        {
-            get { return false; }
-            set
-            {
-                ThreadHelper.ThrowIfNotOnUIThread();
-                if (value == true)
-                {
-                    uiShell.SetWaitCursor();
-                    uiShell.EnableModeless(0);
-                }
-                else
-                {
-                    uiShell.EnableModeless(1);
-                }
-            }
-        }
+        //private bool IsBusy
+        //{
+        //    get { return false; }
+        //    set
+        //    {
+        //        ThreadHelper.ThrowIfNotOnUIThread();
+        //        if (value == true)
+        //        {
+        //            uiShell.SetWaitCursor();
+        //            uiShell.EnableModeless(0);
+        //        }
+        //        else
+        //        {
+        //            uiShell.EnableModeless(1);
+        //        }
+        //    }
+        //}
 
         IChatCompletionService chatCompletionService;
+        IChatGptSettingsService chatGptSettingsService;
 
         protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {
@@ -334,11 +326,10 @@ namespace OpenAIRefactor.Commands
 
             try
             {
-                IsBusy = true;
                 IToolkitServiceProvider<DIExtensionPackage> serviceProvider = await VS.GetServiceAsync<SToolkitServiceProvider<DIExtensionPackage>, IToolkitServiceProvider<DIExtensionPackage>>();
                 if (serviceProvider != null)
                 {
-                    IChatGptSettingsService chatGptSettingsService = (IChatGptSettingsService)serviceProvider.GetService(typeof(IChatGptSettingsService)) ?? null;
+                    chatGptSettingsService = (IChatGptSettingsService)serviceProvider.GetService(typeof(IChatGptSettingsService)) ?? null;
                     if (chatGptSettingsService == null)
                     {
                         await VS.MessageBox.ShowErrorAsync($"Unable to Process", "ChatGPT Settings Not Found!");
@@ -367,6 +358,7 @@ namespace OpenAIRefactor.Commands
                                 await VS.MessageBox.ShowWarningAsync("Invalid API Key", "The API Key Entered is invalid!\n\nConfigure your API Key in Tools/Options/OpenAI Refactor\nand Try Again!");
                                 return;
                             }
+                            await VS.MessageBox.ShowAsync("OpenAPI Key Validated", "Your API Key is valid!  You may now use OpenAI Refactor!");
                             chatGptSettingsService.ChatGptApiKeyValidated(true, config.OpenAI_ApiKey);
 
                         }
@@ -407,7 +399,6 @@ namespace OpenAIRefactor.Commands
             }
             finally
             {
-                IsBusy = false;
                 var timer = new Timer((s) => { Task.Run(ClearStatusBarAsync).Wait(); }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(-1));
             }
         }

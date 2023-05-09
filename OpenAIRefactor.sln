@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenAIRefactor.Extension", "OpenAIRefactor.Extension\OpenAIRefactor.Extension.csproj", "{7F36F7DF-119E-4175-B1FA-C723EE10BD9B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSIXProject1", "VSIXProject1\VSIXProject1.csproj", "{1E952DF7-4FF8-4DF6-BF23-773BE8687111}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{7F36F7DF-119E-4175-B1FA-C723EE10BD9B}.Release|arm64.Build.0 = Release|arm64
 		{7F36F7DF-119E-4175-B1FA-C723EE10BD9B}.Release|x86.ActiveCfg = Release|x86
 		{7F36F7DF-119E-4175-B1FA-C723EE10BD9B}.Release|x86.Build.0 = Release|x86
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Debug|arm64.ActiveCfg = Debug|arm64
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Debug|arm64.Build.0 = Debug|arm64
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Debug|x86.ActiveCfg = Debug|x86
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Debug|x86.Build.0 = Debug|x86
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Release|arm64.ActiveCfg = Release|arm64
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Release|arm64.Build.0 = Release|arm64
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Release|x86.ActiveCfg = Release|x86
+		{1E952DF7-4FF8-4DF6-BF23-773BE8687111}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
