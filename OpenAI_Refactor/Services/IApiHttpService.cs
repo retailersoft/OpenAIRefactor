@@ -15,16 +15,17 @@ public interface IApiHttpService
 }
 
 
-public class ApiHttpService : IApiHttpService
+public class ApiHttpService : IApiHttpService, IDisposable
 {
     private const string ORGANIZATION = "Openai-Organization";
     private const string REQUEST_ID = "X-Request-ID";
     private const string PROCESSING_TIME = "Openai-Processing-Ms";
     private const string OPENAI_VERSION = "Openai-Version";
     private const string OPENAI_MODEL = "Openai-Model";
-
+    private HttpClient httpClient;
     public ApiHttpService()
     {
+        httpClient = new();
     }
 
     public async Task<HttpOperationResult<TResult>> PostAsync<TData, TResult>(string apiKey, string uri, TData data, Func<TData, CancellationToken, Task<HttpContent>> contentFactory, CancellationToken cancellationToken = default)
@@ -59,9 +60,6 @@ public class ApiHttpService : IApiHttpService
 
 
             request.Content = new StringContent(jsonText, Encoding.UTF8, "application/json");
-
-
-            using HttpClient httpClient = new();
 
             using HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
@@ -113,5 +111,8 @@ public class ApiHttpService : IApiHttpService
         return response.IsSuccessStatusCode;
     }
 
-
+    public void Dispose()
+    {
+        httpClient?.Dispose();
+    }
 }

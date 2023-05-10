@@ -69,6 +69,7 @@
     <Compile Include="Services\IApiHttpService.cs" />
     <Compile Include="Services\IChatCompletionService.cs" />
     <Compile Include="Services\IChatGptSettingsService.cs" />
+    <Compile Include="Settings\CSharpVersion.cs" />
     <Compile Include="Settings\OpenAIDefaultOptions.cs" />
     <Compile Include="Settings\OpenAIOptions.cs" />
     <Compile Include="source.extension.cs">
@@ -127,7 +128,12 @@
       <Version>1.0.28</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\OpenAI.ChatGpt\OpenAI.ChatGpt.csproj">
+      <Project>{d2d1c203-f358-43af-8d4c-340567399f1c}</Project>
+      <Name>OpenAI.ChatGpt</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

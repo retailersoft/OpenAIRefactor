@@ -8,7 +8,14 @@ public class EditorLanguageInfo
     {
         get
         {
-            return $"Refactor the following code using {Language} Version {Version}\nDont give any explanation\n";
+            return $"Refactor the {Language} code using Version {Version}\nDont give any explanation";
+        }
+    }
+    public string SystemMessage
+    {
+        get
+        {
+            return $"You are an advanced {Language} Programmer";
         }
     }
 }

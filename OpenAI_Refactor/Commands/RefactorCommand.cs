@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using OpenAI_Refactor.Models.ChatCompletions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -89,21 +88,7 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
                     string targetFrameworkMoniker = project.Properties.Item("TargetFrameworkMoniker").Value.ToString();
                     FrameworkName frameworkName = new(targetFrameworkMoniker);
                     Version frameworkVersion = frameworkName.Version;
-                    var maxCSharpVersion = 7.3;
-                    if (frameworkVersion.Major >= 7)
-                        maxCSharpVersion = 11;
-                    else if (frameworkVersion.Major == 6)
-                        maxCSharpVersion = 10;
-                    else if (frameworkVersion.Major == 5)
-                        maxCSharpVersion = 9;
-                    else if (frameworkVersion.Major == 3)
-                        maxCSharpVersion = 7;
-                    else if (frameworkVersion.Major == 2 && frameworkVersion.Minor == 1)
-                        maxCSharpVersion = 8;
-                    else
-                        maxCSharpVersion = 7.3;
-
-
+                    var maxCSharpVersion = CSharpVersion.HighestLanguageVersion(frameworkName, frameworkVersion);
                     info.Version = maxCSharpVersion.ToString();
 
                     EditorLanguageInfos.Add(project.Name, info);
@@ -123,46 +108,62 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
         return lineSpan.EndLinePosition.Line - lineSpan.StartLinePosition.Line + 1;
     }
 
-
-    private async Task ProcessRefactoringAsync(string refactorCommand, string methodName, string originalMethod, DocumentView documentView, IWpfTextView textView, Span span)
+    private async Task ProcessRefactoringAsync(EditorLanguageInfo editorLanguageInfo, string methodName, string originalMethod, DocumentView documentView, IWpfTextView textView, Span span)
     {
-        var fullMessage = refactorCommand + ":\n" + originalMethod;
-        var cm = ChatMessage.CreateFromUser(fullMessage);
-        ChatCompletionRequest request = new(cm);
+        //List<ChatMessage> chatMessages = new()
+        //{
+        //    ChatMessage.CreateFromSystem(editorLanguageInfo.SystemMessage),
+        //    ChatMessage.CreateFromUser(editorLanguageInfo.ChatMessage),
+        //    ChatMessage.CreateFromAssistant(originalMethod),
+        //};
+        //ChatCompletionRequest request = new(chatMessages);
+        //request.Model = "gpt-3.5-turbo";
+        //request.Temperature = 0.5;
+        //request.TopP = 1.0;
+        //request.FrequencyPenalty = 0.0;
+        //request.PresencePenalty = 0.0;
+        var text1 = await chatCompletionService.RefactorCodeAsync(editorLanguageInfo.Language, editorLanguageInfo.Version, originalMethod);
+        var methodSpan = new SnapshotSpan(textView.TextSnapshot, span);
+        documentView.TextBuffer.Replace(methodSpan, text1);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        FormatDocument();
 
-        var textCompletionResponse = await chatCompletionService.GetAsync(request, CancellationToken.None);
-
-        if (textCompletionResponse.IsSuccess && textCompletionResponse.Result.Choices.Any())
-        {
-            var choice = textCompletionResponse.Result.Choices.FirstOrDefault();
-            var text = choice.Message.Content;
-
-            var methodSpan = new SnapshotSpan(textView.TextSnapshot, span);
-            documentView.TextBuffer.Replace(methodSpan, text);
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            FormatDocument();
-
-            await VS.StatusBar.ShowProgressAsync($"Refactored {methodName} successfully.", 3, 3);
-
-        }
-        else
-        {
-            var errorHead = $"Error Refactoring {methodName}.";
-            await VS.StatusBar.ShowProgressAsync(errorHead, 3, 3);
+        await VS.StatusBar.ShowProgressAsync($"Refactored {methodName} successfully.", 3, 3);
 
 
+        //var textCompletionResponse = await chatCompletionService.GetAsync(request, CancellationToken.None);
 
-            if (textCompletionResponse.Exception.Message.Contains("Unauthorized"))
-            {
-                await VS.MessageBox.ShowErrorAsync("Unauthorized API Key", "The API Key Entered is invalid!\n\nConfigure your API Key in Tools/Options/OpenAI Refactor\nand Try Again!");
-                chatGptSettingsService?.ChatGptApiKeyValidated(false);
-            }
-            else
-            {
-                await VS.MessageBox.ShowErrorAsync(errorHead, textCompletionResponse.ErrorMessage);
-            }
+        //if (textCompletionResponse.IsSuccess && textCompletionResponse.Result.Choices.Any())
+        //{
+        //    var choice = textCompletionResponse.Result.Choices.FirstOrDefault();
+        //    var text = choice.Message.Content;
 
-        }
+        //    var methodSpan = new SnapshotSpan(textView.TextSnapshot, span);
+        //    documentView.TextBuffer.Replace(methodSpan, text);
+        //    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        //    FormatDocument();
+
+        //    await VS.StatusBar.ShowProgressAsync($"Refactored {methodName} successfully.", 3, 3);
+
+        //}
+        //else
+        //{
+        //    var errorHead = $"Error Refactoring {methodName}.";
+        //    await VS.StatusBar.ShowProgressAsync(errorHead, 3, 3);
+
+
+
+        //    if (textCompletionResponse.Exception.Message.Contains("Unauthorized"))
+        //    {
+        //        await VS.MessageBox.ShowErrorAsync("Unauthorized API Key", "The API Key Entered is invalid!\n\nConfigure your API Key in Tools/Options/OpenAI Refactor\nand Try Again!");
+        //        chatGptSettingsService?.ChatGptApiKeyValidated(false);
+        //    }
+        //    else
+        //    {
+        //        await VS.MessageBox.ShowErrorAsync(errorHead, textCompletionResponse.ErrorMessage);
+        //    }
+
+        //}
 
     }
 
@@ -174,7 +175,7 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
         string methodName = methodNode.Identifier.ValueText;
 
         await VS.StatusBar.ShowProgressAsync($"Refactoring Node: {methodName}", 2, 3);
-        await ProcessRefactoringAsync(editorLanguageInfo.ChatMessage, methodName, originalMethod, documentView, textView, new Span(methodNode.Span.Start, methodNode.Span.Length));
+        await ProcessRefactoringAsync(editorLanguageInfo, methodName, originalMethod, documentView, textView, new Span(methodNode.Span.Start, methodNode.Span.Length));
 
     }
 
@@ -190,7 +191,7 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
 
         await VS.StatusBar.ShowProgressAsync($"Refactoring Node: {methodName}", 2, 3);
 
-        await ProcessRefactoringAsync(editorLanguageInfo.ChatMessage, methodName, originalMethod, documentView, textView, selectedSpan);
+        await ProcessRefactoringAsync(editorLanguageInfo, methodName, originalMethod, documentView, textView, selectedSpan);
 
     }
 
@@ -223,7 +224,7 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
 
         var methodSpan = new SnapshotSpan(textView.TextSnapshot, originalNodeSpan);
 
-        await ProcessRefactoringAsync(editorLanguageInfo.ChatMessage, methodName, originalMethod, documentView, textView, originalNodeSpan);
+        await ProcessRefactoringAsync(editorLanguageInfo, methodName, originalMethod, documentView, textView, originalNodeSpan);
 
     }
 
