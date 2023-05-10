@@ -1,20 +1,20 @@
-﻿using OpenAI_Refactor;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle(Vsix.Name)]
-[assembly: AssemblyDescription(Vsix.Description)]
+[assembly: AssemblyTitle("OpenAI Refactor")]
+[assembly: AssemblyDescription("OpenAI Refactor Visual Studio Extension")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany(Vsix.Author)]
-[assembly: AssemblyProduct(Vsix.Name)]
-[assembly: AssemblyCopyright(Vsix.Author)]
+[assembly: AssemblyCompany("RetailerSoft")]
+[assembly: AssemblyProduct("OpenAIRefactor")]
+[assembly: AssemblyCopyright("Copyright 2023 All Rights Reserved")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion(Vsix.Version)]
-[assembly: AssemblyFileVersion(Vsix.Version)]
+[assembly: AssemblyVersion("1.0.0.1")]
+[assembly: AssemblyFileVersion("1.0.0.1")]
+[assembly: Guid("5619b33d-7282-4927-9a3a-0740fb79354e")]
 
 namespace System.Runtime.CompilerServices
 {
