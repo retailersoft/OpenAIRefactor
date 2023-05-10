@@ -2,8 +2,12 @@
 ## Visual Studio Extension
 
 ### Configuration
--in Visual Studio Tools/Options - search for OpenAI Refactor, and set your API KEY.
-
-docs/images/RS_White_with-tagline-copy245x54.png
-
+- In Visual Studio Tools/Options - search for OpenAI Refactor, and set your API KEY.
 ![Alt text](docs/images/Settings.jpg "Settings")
+
+### Usage
+- Select text in the editor window
+-or-
+- Based on the cursor position with nothing selected
+
+![Alt text](docs/images/OpenAIRefactor.png "Execute")
