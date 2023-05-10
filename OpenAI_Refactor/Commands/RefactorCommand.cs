@@ -110,18 +110,6 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
 
     private async Task ProcessRefactoringAsync(EditorLanguageInfo editorLanguageInfo, string methodName, string originalMethod, DocumentView documentView, IWpfTextView textView, Span span)
     {
-        //List<ChatMessage> chatMessages = new()
-        //{
-        //    ChatMessage.CreateFromSystem(editorLanguageInfo.SystemMessage),
-        //    ChatMessage.CreateFromUser(editorLanguageInfo.ChatMessage),
-        //    ChatMessage.CreateFromAssistant(originalMethod),
-        //};
-        //ChatCompletionRequest request = new(chatMessages);
-        //request.Model = "gpt-3.5-turbo";
-        //request.Temperature = 0.5;
-        //request.TopP = 1.0;
-        //request.FrequencyPenalty = 0.0;
-        //request.PresencePenalty = 0.0;
         var text1 = await chatCompletionService.RefactorCodeAsync(editorLanguageInfo.Language, editorLanguageInfo.Version, originalMethod);
         var methodSpan = new SnapshotSpan(textView.TextSnapshot, span);
         documentView.TextBuffer.Replace(methodSpan, text1);
@@ -284,27 +272,9 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
         syntaxNode = root.DescendantNodes().OfType<T>()
             .FirstOrDefault(n => n.FullSpan.Contains(caretPosition));
 
-        //syntaxNode = (T)FindNode<T>(caretPosition, root);
         return syntaxNode != null;
     }
 
-    //private bool IsBusy
-    //{
-    //    get { return false; }
-    //    set
-    //    {
-    //        ThreadHelper.ThrowIfNotOnUIThread();
-    //        if (value == true)
-    //        {
-    //            uiShell.SetWaitCursor();
-    //            uiShell.EnableModeless(0);
-    //        }
-    //        else
-    //        {
-    //            uiShell.EnableModeless(1);
-    //        }
-    //    }
-    //}
 
     IChatCompletionService chatCompletionService;
     IChatGptSettingsService chatGptSettingsService;
@@ -339,9 +309,9 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
                 }
                 else
                 {
+                    var config = await ConfigurationOptions.GetLiveInstanceAsync();
                     if (chatGptSettingsService.ChatGptApiKeyIsValid == false)
                     {
-                        var config = await ConfigurationOptions.GetLiveInstanceAsync();
                         if (string.IsNullOrEmpty(config.OpenAI_ApiKey) || config.OpenAI_ApiKey.Equals("[Enter OpenAI ApiKey]"))
                         {
                             await VS.MessageBox.ShowWarningAsync("Invalid API Key", "A valid API Key must be configured.\n\nConfigure your API Key in Tools/Options/OpenAI Refactor\nand Try Again!");
@@ -358,9 +328,10 @@ internal class RefactorCommand : BaseCommand<RefactorCommand>
                         chatGptSettingsService.ChatGptApiKeyValidated(true, config.OpenAI_ApiKey);
 
                     }
-                    if (chatGptSettingsService.ChatGptApiKeyIsValid == false)
+                    if (config.OpenAI_ApiKey != chatGptSettingsService.ChatGptApiKey)
                     {
-
+                        config.OpenAI_ApiKey = chatGptSettingsService.ChatGptApiKey;
+                        await config.SaveAsync();
                     }
 
                     await VS.StatusBar.ShowProgressAsync("Identifying Node", 1, 3);
